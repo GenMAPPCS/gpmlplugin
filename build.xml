@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<project name="GPML" default="jar" basedir=".">
+	<!-- always be java 1.5 compatible -->
+	<property name="ant.build.javac.target" value="1.5"/>
+	<property name="ant.build.javac.source" value="1.5"/>
+	
+	<property name="plugin.name" value="gpml-with-dependencies" />
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="lib.dir" value="lib" />
+	<property name="class.dir" value="class" />
+	<property name="axis.lib.dir" value="${lib.dir}/axis-1_4/lib" />
+	<property name="pathvisio.class.dir" value="class.pathvisio" />
+	<property name="cytoscape.dir" value="/Applications/Cytoscape_v2.8.2" />
+	<property name="cytoscape.plugin.dir" value="${cytoscape.dir}/plugins" />
+	
+	<path id="class.path">
+		<path location="${build.dir}"/>
+		<fileset dir="${axis.lib.dir}" includes="*.jar" />
+		<fileset dir="${lib.dir}" includes="*.jar" />
+		<pathelement location="${cytoscape.dir}/cytoscape.jar" />
+
+	</path>
+
+	<target name="prepare" description="Prepare">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${pathvisio.class.dir}" />
+		<mkdir dir="${class.dir}" />
+		
+		<!-- check if cytoscape.dir is properly specified !-->
+		<fail message="Can't find ${cytoscape.dir}/cytoscape.jar, please specify the path to cytoscape with -Dcytoscape.dir=....">
+			<condition>
+				<not><available file="${cytoscape.dir}/cytoscape.jar"/></not>
+			</condition>
+		</fail>
+	</target>
+
+	<target name="clean" description="Remove all generated files.">
+		<delete dir="${build.dir}" />
+		<delete dir="${pathvisio.class.dir}" />
+		<delete dir="${class.dir}" />
+	</target>
+
+	<target name="compile" depends="prepare" description="Compile all sources">
+		<javac srcdir="src" debug="true" destdir="${build.dir}">
+			<classpath refid="class.path" />
+		</javac>
+	</target>
+
+
+	<target name="jar" depends="compile" description="Generate jar file">
+		<unjar dest="${class.dir}">
+
+			<fileset dir="${lib.dir}" includes="*.jar" />
+			<fileset dir="${axis.lib.dir}" includes="*.jar"/>
+
+		</unjar>
+		<copy file="plugin.props" todir="${build.dir}/org/pathvisio/cytoscape" />
+
+		<jar jarfile="${plugin.name}.jar">
+			<fileset dir="${build.dir}" includes="**/*.class" />
+			<fileset dir="${build.dir}" includes="**/*.props" />
+			<fileset dir="${class.dir}">
+				<include name="**/*.class"/>
+				<include name="**/*.properties"/>
+				<include name="**/*.xsd"/>
+				<include name="META-INF/services/*.*"/>
+				<include name="**/*.wsdd"/>
+				<include name="**/*.txt"/>
+				<include name="**/*.xml"/>
+			</fileset>
+			<manifest>
+				<attribute name="Cytoscape-Plugin" value="org.pathvisio.cytoscape.GpmlPlugin" />
+			</manifest>
+		</jar>
+
+		<copy file="${plugin.name}.jar" todir="${cytoscape.plugin.dir}" />
+	</target>
+
+</project>
